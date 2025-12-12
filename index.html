@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Симулятор Лудомана 🎰</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --accent: #ffcc00;
+            --red: #ff4444;
+            --green: #44ff44;
+            --panel-bg: #2d2d2d;
+        }
+
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: var(--accent);
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 20px;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 400px;
+            background: var(--panel-bg);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        /* Слоты */
+        .slots-window {
+            background: #000;
+            border: 4px solid var(--accent);
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 3rem;
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            height: 60px;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .slot {
+            width: 33%;
+        }
+
+        /* Статистика */
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+            text-align: left;
+            background: #222;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .stat-item span {
+            display: block;
+            font-size: 0.8rem;
+            color: #888;
+        }
+        .stat-item strong {
+            font-size: 1.2rem;
+        }
+        .debt { color: var(--red); }
+        .balance { color: var(--green); }
+
+        /* Управление */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        input[type="number"] {
+            width: 90%;
+            padding: 10px;
+            background: #333;
+            border: 1px solid #555;
+            color: #fff;
+            border-radius: 5px;
+            font-size: 1rem;
+            margin: 0 auto;
+        }
+
+        button {
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        button:active { transform: scale(0.98); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-spin {
+            background: linear-gradient(45deg, #ffcc00, #ff9900);
+            color: #000;
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.3);
+        }
+
+        .btn-loan {
+            background: #444;
+            color: var(--red);
+            border: 1px solid var(--red);
+            font-size: 0.9rem;
+            padding: 10px;
+        }
+
+        .btn-sell {
+            background: #444;
+            color: #aaa;
+            font-size: 0.9rem;
+            padding: 10px;
+        }
+
+        /* Лог сообщений */
+        #log {
+            margin-top: 15px;
+            height: 60px;
+            font-size: 0.9rem;
+            color: #aaa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-style: italic;
+        }
+
+        .inventory {
+            margin-top: 20px;
+            border-top: 1px solid #444;
+            padding-top: 10px;
+        }
+        .inventory h3 { margin: 5px 0; font-size: 1rem; }
+        .item-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: center;
+        }
+        .item-tag {
+            background: #333;
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            border: 1px solid #555;
+        }
+        .item-tag:hover { background: #444; border-color: #888; }
+
+        .game-over-screen {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .game-over-screen h2 { color: var(--red); font-size: 3rem; margin: 0; }
+        .game-over-screen p { font-size: 1.5rem; margin: 20px; }
+
+        /* Анимация прокрутки */
+        @keyframes spinAnim {
+            0% { transform: translateY(-5px); }
+            50% { transform: translateY(5px); }
+            100% { transform: translateY(-5px); }
+        }
+        .spinning .slot {
+            animation: spinAnim 0.1s infinite;
+            filter: blur(2px);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>CASINO 777</h1>
+    <div class="subtitle">"Подними бабла, все честно!"</div>
+
+    <div class="game-container">
+        <div class="slots-window" id="slotsWindow">
+            <div class="slot" id="slot1">🍒</div>
+            <div class="slot" id="slot2">🍒</div>
+            <div class="slot" id="slot3">🍒</div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <span>Баланс:</span>
+                <strong class="balance" id="balanceDisplay">5000 ₽</strong>
+            </div>
+            <div class="stat-item">
+                <span>Долги МФО:</span>
+                <strong class="debt" id="debtDisplay">0 ₽</strong>
+            </div>
+        </div>
+
+        <div id="log">Добро пожаловать! Удачи!</div>
+
+        <div class="controls">
+            <input type="number" id="betAmount" value="500" min="100" step="100">
+            <button class="btn-spin" id="spinBtn" onclick="spin()">КРУТИТЬ (SPIN)</button>
+            <button class="btn-loan" id="loanBtn" onclick="takeLoan()">Взять займ "БыстроДеньги" (+5000₽)</button>
+        </div>
+
+        <div class="inventory" id="inventoryBlock">
+            <h3>Имущество (нажми, чтобы продать):</h3>
+            <div class="item-list" id="itemList">
+                </div>
+        </div>
+    </div>
+
+    <div class="game-over-screen" id="gameOverScreen">
+        <h2>GAME OVER</h2>
+        <p>Ты всё проиграл.</p>
+        <p id="finalStats" style="font-size: 1rem; color: #888;"></p>
+        <button class="btn-spin" onclick="location.reload()">Начать новую жизнь</button>
+    </div>
+
+    <script>
+        // Игровые переменные
+        let balance = 5000;
+        let debt = 0;
+        let isSpinning = false;
+        
+        // Вещи для продажи (Название, Цена)
+        let inventory = [
+            { name: "iPhone 11 (битый)", price: 8000 },
+            { name: "Золотая цепочка", price: 15000 },
+            { name: "Телевизор LG", price: 5000 },
+            { name: "Бабушкин сервиз", price: 2000 },
+            { name: "Автомобиль ВАЗ 2114", price: 45000 }
+        ];
+
+        // Символы и их "вес" (чем больше вес, тем чаще выпадает - для проигрыша)
+        // 🍒 - часто, 🍋 - средне, 7️⃣ - редко, 💎 - джекпот
+        const symbols = ['💩', '🍒', '🍋', '🍇', '7️⃣', '💎'];
+        
+        // Элементы DOM
+        const elBalance = document.getElementById('balanceDisplay');
+        const elDebt = document.getElementById('debtDisplay');
+        const elLog = document.getElementById('log');
+        const elSlots = [document.getElementById('slot1'), document.getElementById('slot2'), document.getElementById('slot3')];
+        const elInventory = document.getElementById('itemList');
+        const btnSpin = document.getElementById('spinBtn');
+        const inputBet = document.getElementById('betAmount');
+
+        function updateUI() {
+            elBalance.textContent = balance + ' ₽';
+            elDebt.textContent = debt + ' ₽';
+            
+            // Отрисовка инвентаря
+            elInventory.innerHTML = '';
+            inventory.forEach((item, index) => {
+                let tag = document.createElement('div');
+                tag.className = 'item-tag';
+                tag.textContent = `${item.name} (+${item.price}₽)`;
+                tag.onclick = () => sellItem(index);
+                elInventory.appendChild(tag);
+            });
+
+            if (inventory.length === 0) {
+                elInventory.innerHTML = '<span style="font-size:0.8rem; color:#555">Пусто...</span>';
+            }
+        }
+
+        function log(msg, color = "#aaa") {
+            elLog.textContent = msg;
+            elLog.style.color = color;
+        }
+
+        function getRandomSymbol() {
+            // "Подкрутка": шанс выпадения хороших символов ниже
+            const r = Math.random();
+            if (r < 0.35) return '💩';
+            if (r < 0.60) return '🍒';
+            if (r < 0.80) return '🍋';
+            if (r < 0.92) return '🍇';
+            if (r < 0.98) return '7️⃣';
+            return '💎';
+        }
+
+        function spin() {
+            if (isSpinning) return;
+            
+            let bet = parseInt(inputBet.value);
+            if (isNaN(bet) || bet <= 0) {
+                log("Введите нормальную ставку!", "#f55");
+                return;
+            }
+            if (bet > balance) {
+                log("Недостаточно средств. Продай что-нибудь или займи.", "#f55");
+                return;
+            }
+
+            // Списываем ставку
+            balance -= bet;
+            updateUI();
+            
+            isSpinning = true;
+            btnSpin.disabled = true;
+            document.getElementById('slotsWindow').classList.add('spinning');
+            log("Крутим...", "#ffcc00");
+
+            // Имитация задержки вращения
+            let spinsCount = 0;
+            let spinInterval = setInterval(() => {
+                elSlots.forEach(s => s.textContent = symbols[Math.floor(Math.random() * symbols.length)]);
+                spinsCount++;
+                if (spinsCount > 10) {
+                    clearInterval(spinInterval);
+                    finalizeSpin(bet);
+                }
+            }, 100);
+        }
+
+        function finalizeSpin(bet) {
+            document.getElementById('slotsWindow').classList.remove('spinning');
+            
+            // Генерируем финальный результат
+            const res = [getRandomSymbol(), getRandomSymbol(), getRandomSymbol()];
+            elSlots[0].textContent = res[0];
+            elSlots[1].textContent = res[1];
+            elSlots[2].textContent = res[2];
+
+            // Логика выигрыша
+            let multiplier = 0;
+
+            // 3 одинаковых
+            if (res[0] === res[1] && res[1] === res[2]) {
+                if (res[0] === '💩') multiplier = 0; // Лол
+                else if (res[0] === '🍒') multiplier = 3;
+                else if (res[0] === '🍋') multiplier = 5;
+                else if (res[0] === '🍇') multiplier = 10;
+                else if (res[0] === '7️⃣') multiplier = 50;
+                else if (res[0] === '💎') multiplier = 100; // ДЖЕКПОТ
+            } 
+            // 2 одинаковых (утешительный приз, только если не 💩)
+            else if ((res[0] === res[1] || res[1] === res[2] || res[0] === res[2]) && !res.includes('💩')) {
+                multiplier = 0.5; // Возврат половины ставки
+            }
+
+            let winAmount = Math.floor(bet * multiplier);
+            balance += winAmount;
+
+            // Настроение игры
+            if (winAmount > bet) {
+                log(`ЗАНОС! Выигрыш: ${winAmount} ₽`, "#44ff44");
+            } else if (winAmount > 0) {
+                log(`Маленький выигрыш: ${winAmount} ₽`, "#ffff44");
+            } else {
+                const phrases = ["Пусто...", "Почти повезло...", "Слот холодный...", "Надо отыграться...", "Казино не обманешь?"];
+                log(phrases[Math.floor(Math.random() * phrases.length)], "#ff4444");
+            }
+
+            // Начисляем проценты по долгу каждый спин (5%)
+            if (debt > 0) {
+                let interest = Math.floor(debt * 0.05);
+                debt += interest;
+                // Не выводим сообщение, чтобы не спамить, но долг растет молча
+            }
+
+            isSpinning = false;
+            btnSpin.disabled = false;
+            updateUI();
+            checkGameOver();
+        }
+
+        function takeLoan() {
+            if (debt > 50000) {
+                log("Коллекторы уже выехали. Вам больше не дают.", "#f55");
+                return;
+            }
+            let loanAmount = 5000;
+            balance += loanAmount;
+            debt += 6500; // Берешь 5000, отдаешь 6500 сразу
+            log("Займ взят! Проценты капают...", "#ffa500");
+            updateUI();
+        }
+
+        function sellItem(index) {
+            let item = inventory[index];
+            if(confirm(`Продать "${item.name}" за ${item.price}₽?`)) {
+                balance += item.price;
+                inventory.splice(index, 1);
+                log(`Вы продали ${item.name}. Есть на что крутить!`, "#44ff44");
+                updateUI();
+            }
+        }
+
+        function checkGameOver() {
+            if (balance <= 0 && inventory.length === 0) {
+                setTimeout(() => {
+                    if (balance <= 0) { // Двойная проверка
+                        document.getElementById('gameOverScreen').style.display = 'flex';
+                        document.getElementById('finalStats').textContent = `Долг перед мафией: ${debt} ₽`;
+                    }
+                }, 1000);
+            }
+        }
+
+        // Инициализация
+        updateUI();
+    </script>
+</body>
+</html>
