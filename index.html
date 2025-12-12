@@ -3,450 +3,444 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Симулятор Жизни: Казахстан Edition</title>
+    <title>Open World Sim: Kazakhstan</title>
     <style>
-        :root {
-            --bg: #202020;
-            --panel: #333;
-            --text: #fff;
-            --green: #2ecc71;
-            --red: #e74c3c;
-            --blue: #3498db;
-            --yellow: #f1c40f;
-        }
-
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
             margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
             overflow: hidden;
-            user-select: none;
-        }
-
-        .game-boy {
-            width: 380px;
-            height: 700px;
-            background: #444;
-            border-radius: 20px;
-            padding: 15px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        /* Верхняя панель статистики */
-        .stats-bar {
-            background: #111;
-            padding: 10px;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            font-size: 0.9rem;
-        }
-
-        .stat-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-        }
-
-        .money-display { color: var(--green); font-weight: bold; font-size: 1.1rem; }
-        .debt-display { color: var(--red); font-size: 0.8rem; }
-
-        .progress-container {
-            width: 100%;
-            background: #555;
-            height: 8px;
-            border-radius: 4px;
-            margin-top: 2px;
-            position: relative;
-        }
-
-        .progress-bar {
-            height: 100%;
-            border-radius: 4px;
-            transition: width 0.3s;
-        }
-        .bar-hunger { background: var(--yellow); width: 100%; }
-        .bar-thirst { background: var(--blue); width: 100%; }
-
-        /* Экран локаций */
-        .screen {
-            flex: 1;
-            background: #2a2a2a;
-            border-radius: 10px;
-            padding: 10px;
-            overflow-y: auto;
-            position: relative;
-            border: 2px solid #555;
-        }
-
-        .location-title {
-            text-align: center;
-            font-size: 1.2rem;
-            margin-bottom: 15px;
-            color: var(--yellow);
-            border-bottom: 1px solid #444;
-            padding-bottom: 5px;
-        }
-
-        /* Сетка действий */
-        .grid-menu {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        .card {
-            background: #3a3a3a;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            transition: 0.1s;
-            border: 1px solid #444;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 80px;
-        }
-        .card:hover { background: #444; border-color: #666; }
-        .card:active { transform: scale(0.95); }
-        
-        .card-icon { font-size: 2rem; margin-bottom: 5px; }
-        .card-name { font-size: 0.9rem; font-weight: bold; }
-
-        /* Внутренние меню (скрыты по умолчанию) */
-        .sub-screen {
-            display: none;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .sub-screen.active { display: flex; }
-
-        .action-btn {
-            padding: 12px;
-            background: #555;
-            border: none;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-            text-align: left;
-            display: flex;
-            justify-content: space-between;
-        }
-        .action-btn:hover { background: #666; }
-        .action-btn span:last-child { font-weight: bold; color: var(--green); }
-
-        .back-btn {
-            margin-top: 10px;
-            background: var(--red);
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        /* Казино инпуты */
-        .casino-input {
-            width: 90%;
-            padding: 10px;
             background: #222;
-            border: 1px solid #555;
+            font-family: 'Segoe UI', sans-serif;
             color: white;
-            margin-bottom: 10px;
+            touch-action: none; /* Чтобы не скроллить на телефоне */
+        }
+
+        /* Игровой холст */
+        canvas {
+            display: block;
+            background: #2a2a2a;
+        }
+
+        /* Интерфейс (ХУД) */
+        #ui-layer {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            pointer-events: none; /* Пропускать клики сквозь интерфейс */
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+            border: 1px solid #444;
+        }
+
+        .bar-container {
+            width: 100px;
+            height: 10px;
+            background: #555;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .bar-fill { height: 100%; transition: width 0.2s; }
+        .bar-hp { background: #e74c3c; } /* Еда */
+        .bar-water { background: #3498db; } /* Вода */
+
+        /* Кнопки управления (промокод) */
+        #controls-layer {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #f1c40f, #f39c12);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn-promo { background: linear-gradient(45deg, #9b59b6, #8e44ad); color: white; }
+
+        /* Модальные окна (Здания) */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: #333;
+            padding: 20px;
+            border-radius: 15px;
+            width: 300px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            border: 2px solid #fff;
+            text-align: center;
+            z-index: 10;
+        }
+        .modal h2 { margin-top: 0; color: #f1c40f; }
+        .modal-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #444;
+            color: white;
+            border: 1px solid #666;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .modal-btn:hover { background: #555; }
+        .close-btn { background: #c0392b; border-color: #e74c3c; }
+
+        /* Джойстик для телефона */
+        #joystick-zone {
+            position: absolute;
+            bottom: 50px;
+            left: 50px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: none; /* Включится, если тачскрин */
         }
 
         /* Сообщения */
-        .notification {
+        #msg {
             position: absolute;
-            bottom: 20px;
+            bottom: 20%;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0,0,0,0.8);
             padding: 10px 20px;
             border-radius: 20px;
-            font-size: 0.8rem;
-            pointer-events: none;
             opacity: 0;
-            transition: opacity 0.3s;
-            width: 80%;
-            text-align: center;
-            z-index: 100;
-        }
-
-        /* Game Over */
-        .game-over {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 200;
-        }
-        .game-over h1 { color: var(--red); }
-        .restart-btn {
-            background: var(--green);
-            padding: 15px 30px;
-            font-size: 1.2rem;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+            transition: opacity 0.5s;
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
 
-    <div class="game-boy">
-        <div class="stats-bar">
-            <div class="stat-row">
-                <span class="money-display" id="money">0 ₸</span>
-                <span class="debt-display" id="debt">Кредит: 0 ₸</span>
-            </div>
-            <div style="margin-top: 5px;">
-                <div style="display:flex; justify-content:space-between; font-size:0.7rem;"><span>Голод</span><span id="hungerVal">100%</span></div>
-                <div class="progress-container"><div class="progress-bar bar-hunger" id="hungerBar"></div></div>
-            </div>
-            <div style="margin-top: 5px;">
-                <div style="display:flex; justify-content:space-between; font-size:0.7rem;"><span>Жажда</span><span id="thirstVal">100%</span></div>
-                <div class="progress-container"><div class="progress-bar bar-thirst" id="thirstBar"></div></div>
-            </div>
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-layer">
+        <div class="stat-box">
+            💰 <span id="moneyVal">2000</span> ₸
         </div>
-
-        <div class="screen">
-            
-            <div id="mainMenu" class="sub-screen active">
-                <div class="location-title">Что будем делать?</div>
-                <div class="grid-menu">
-                    <div class="card" onclick="workAction()">
-                        <div class="card-icon">👷‍♂️</div>
-                        <div class="card-name">Работа</div>
-                    </div>
-                    <div class="card" onclick="openMenu('shopMenu')">
-                        <div class="card-icon">🛒</div>
-                        <div class="card-name">Магазин</div>
-                    </div>
-                    <div class="card" onclick="openMenu('casinoMenu')">
-                        <div class="card-icon">🎰</div>
-                        <div class="card-name">Казино</div>
-                    </div>
-                    <div class="card" onclick="openMenu('bankMenu')">
-                        <div class="card-icon">🏦</div>
-                        <div class="card-name">Kaspi Bank</div>
-                    </div>
-                </div>
-                <div style="margin-top: 20px; font-size: 0.8rem; color: #777; text-align: center;">
-                    Работа дает 1000₸<br>Внимательно следи за голодом!
-                </div>
-            </div>
-
-            <div id="shopMenu" class="sub-screen">
-                <div class="location-title">Магазин "Продукты"</div>
-                <button class="action-btn" onclick="buyItem('bread')">
-                    🍞 Хлеб (+20 еда) <span>200 ₸</span>
-                </button>
-                <button class="action-btn" onclick="buyItem('cola')">
-                    🥤 Кола (+30 вода) <span>300 ₸</span>
-                </button>
-                <button class="action-btn" onclick="buyItem('doner')">
-                    🥙 Донер (+50 еда, +10 вода) <span>1200 ₸</span>
-                </button>
-                <button class="back-btn" onclick="openMenu('mainMenu')">Назад</button>
-            </div>
-
-            <div id="bankMenu" class="sub-screen">
-                <div class="location-title">Банк (Лимит 10.000)</div>
-                <div style="text-align:center; margin-bottom:10px; font-size:0.8rem; color:#aaa;">
-                    Текущий долг: <span id="bankDebtVal">0</span> ₸
-                </div>
-                <button class="action-btn" onclick="takeLoan()">
-                    💰 Взять кредит <span>+5000 ₸</span>
-                </button>
-                <button class="action-btn" onclick="repayLoan()">
-                    💸 Погасить долг <span>-5000 ₸</span>
-                </button>
-                <button class="back-btn" onclick="openMenu('mainMenu')">Назад</button>
-            </div>
-
-            <div id="casinoMenu" class="sub-screen">
-                <div class="location-title">Казино "Рояль"</div>
-                <input type="number" id="betAmount" class="casino-input" placeholder="Сумма ставки">
-                <div style="display:flex; gap:10px;">
-                    <button class="action-btn" style="flex:1; background:#e74c3c; justify-content:center;" onclick="gamble('red')">🔴 Красное (x2)</button>
-                    <button class="action-btn" style="flex:1; background:#000; justify-content:center;" onclick="gamble('black')">⚫ Черное (x2)</button>
-                </div>
-                <button class="back-btn" onclick="openMenu('mainMenu')">Назад</button>
-            </div>
-
+        <div class="stat-box" style="font-size: 0.8rem; color:#aaa;" id="debtBox">
+            Кредит: 0 ₸
         </div>
-
-        <div class="notification" id="notification">Сообщение</div>
+        <div class="stat-box">
+            🍔 <div class="bar-container"><div class="bar-fill bar-hp" id="hungerBar" style="width: 100%;"></div></div>
+        </div>
+        <div class="stat-box">
+            💧 <div class="bar-container"><div class="bar-fill bar-water" id="thirstBar" style="width: 100%;"></div></div>
+        </div>
     </div>
 
-    <div class="game-over" id="gameOverScreen">
-        <h1>ТЫ ПОГИБ ☠️</h1>
-        <p id="deathReason" style="color:#fff; margin-bottom: 20px;">Причина: Голод</p>
-        <button class="restart-btn" onclick="location.reload()">Начать заново</button>
+    <div id="controls-layer">
+        <button class="btn btn-promo" onclick="enterPromo()">🎁 ПРОМОКОД</button>
+    </div>
+
+    <div id="msg">Сообщение</div>
+
+    <div id="modal-work" class="modal">
+        <h2>🏗️ Стройка</h2>
+        <p>Нужны деньги? Работай!</p>
+        <button class="modal-btn" onclick="doWork()">Таскать кирпичи (+1000₸)</button>
+        <button class="modal-btn close-btn" onclick="closeModal()">Уйти</button>
+    </div>
+
+    <div id="modal-shop" class="modal">
+        <h2>🛒 Магазин</h2>
+        <button class="modal-btn" onclick="buyItem('bread', 200, 20, 0)">🍞 Хлеб (200₸)</button>
+        <button class="modal-btn" onclick="buyItem('cola', 300, 0, 30)">🥤 Кола (300₸)</button>
+        <button class="modal-btn" onclick="buyItem('doner', 1200, 50, 10)">🥙 Донер (1200₸)</button>
+        <button class="modal-btn close-btn" onclick="closeModal()">Выйти</button>
+    </div>
+
+    <div id="modal-bank" class="modal">
+        <h2>🏦 Kaspi Bank</h2>
+        <p>Лимит кредита: 10 000 ₸</p>
+        <button class="modal-btn" onclick="takeLoan()">Взять 5000 ₸</button>
+        <button class="modal-btn" onclick="repayLoan()">Вернуть 5000 ₸</button>
+        <button class="modal-btn close-btn" onclick="closeModal()">Уйти</button>
+    </div>
+
+    <div id="modal-casino" class="modal">
+        <h2>🎰 Казино</h2>
+        <input type="number" id="betInput" placeholder="Ставка" style="width:80%; padding:10px; margin-bottom:10px;">
+        <div style="display:flex; gap:5px;">
+            <button class="modal-btn" style="background:#c0392b" onclick="spinCasino(true)">Красное (x2)</button>
+            <button class="modal-btn" style="background:#000" onclick="spinCasino(false)">Черное (x2)</button>
+        </div>
+        <button class="modal-btn close-btn" onclick="closeModal()">Уйти</button>
     </div>
 
     <script>
-        // Игровые переменные
+        // --- НАСТРОЙКИ ИГРЫ ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height;
+        
+        // Данные игрока
+        let player = { x: 0, y: 0, size: 20, speed: 4, color: '#3498db' };
         let money = 2000;
         let hunger = 100;
         let thirst = 100;
         let debt = 0;
-        const CREDIT_LIMIT = 10000;
-        let isDead = false;
+        let isGameActive = true;
+        let activeModal = null;
 
-        // UI Элементы
-        const elMoney = document.getElementById('money');
-        const elDebt = document.getElementById('debt');
-        const elHungerBar = document.getElementById('hungerBar');
-        const elThirstBar = document.getElementById('thirstBar');
-        const elHungerVal = document.getElementById('hungerVal');
-        const elThirstVal = document.getElementById('thirstVal');
-        const elBankDebt = document.getElementById('bankDebtVal');
-        const notif = document.getElementById('notification');
+        // Здания на карте
+        const buildings = [
+            { id: 'work', x: 100, y: 100, w: 100, h: 80, color: '#e67e22', label: 'РАБОТА' },
+            { id: 'shop', x: 400, y: 100, w: 100, h: 80, color: '#2ecc71', label: 'МАГАЗИН' },
+            { id: 'bank', x: 100, y: 400, w: 100, h: 80, color: '#e74c3c', label: 'БАНК' },
+            { id: 'casino', x: 400, y: 400, w: 100, h: 80, color: '#9b59b6', label: 'КАЗИНО' }
+        ];
 
-        // Таймер жизни (трата ресурсов)
+        // Управление клавиатурой
+        const keys = {};
+
+        // Инициализация размеров
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            // Спавн игрока в центре
+            if(player.x === 0) {
+                player.x = width / 2;
+                player.y = height / 2;
+            }
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Слушатели ввода
+        window.addEventListener('keydown', e => keys[e.key] = true);
+        window.addEventListener('keyup', e => keys[e.key] = false);
+
+        // --- ИГРОВОЙ ЦИКЛ ---
+        function update() {
+            if (!isGameActive || activeModal) return; // Пауза если открыто меню
+
+            // Движение
+            if (keys['w'] || keys['ArrowUp']) player.y -= player.speed;
+            if (keys['s'] || keys['ArrowDown']) player.y += player.speed;
+            if (keys['a'] || keys['ArrowLeft']) player.x -= player.speed;
+            if (keys['d'] || keys['ArrowRight']) player.x += player.speed;
+
+            // Границы мира
+            if (player.x < 0) player.x = 0;
+            if (player.y < 0) player.y = 0;
+            if (player.x > width) player.x = width;
+            if (player.y > height) player.y = height;
+
+            // Проверка коллизий со зданиями
+            checkCollisions();
+        }
+
+        function draw() {
+            // Очистка
+            ctx.fillStyle = '#222'; // Цвет асфальта
+            ctx.fillRect(0, 0, width, height);
+
+            // Сетка (для вида города)
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            for(let i=0; i<width; i+=50) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,height); ctx.stroke(); }
+            for(let i=0; i<height; i+=50) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(width,i); ctx.stroke(); }
+
+            // Рисуем здания
+            buildings.forEach(b => {
+                ctx.fillStyle = b.color;
+                ctx.fillRect(b.x, b.y, b.w, b.h);
+                // Тень здания
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.fillRect(b.x + 5, b.y + 5, b.w, b.h);
+                // Подпись
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(b.label, b.x + b.w/2, b.y + b.h/2 + 5);
+            });
+
+            // Рисуем игрока
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.size, 0, Math.PI*2);
+            ctx.fillStyle = player.color;
+            ctx.fill();
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Подсказка
+            ctx.fillStyle = '#aaa';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText("WASD или Стрелки для движения", width/2, height - 30);
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+        loop();
+
+        // --- ЛОГИКА ВЗАИМОДЕЙСТВИЯ ---
+
+        function checkCollisions() {
+            buildings.forEach(b => {
+                // Простая проверка прямоугольника и точки
+                if (player.x > b.x && player.x < b.x + b.w &&
+                    player.y > b.y && player.y < b.y + b.h) {
+                        openModal('modal-' + b.id);
+                        // Отталкиваем игрока немного назад, чтобы не спамить открытие
+                        if (player.y > b.y + b.h/2) player.y += 20;
+                        else player.y -= 20;
+                }
+            });
+        }
+
+        // --- СИСТЕМА ЖИЗНИ ---
         setInterval(() => {
-            if (isDead) return;
-            
-            hunger -= 1; // -1% в секунду
-            thirst -= 2; // -2% в секунду (вода уходит быстрее)
-
-            if (hunger <= 0) die("Ты умер от голода.");
-            if (thirst <= 0) die("Ты умер от обезвоживания.");
-
+            if (!isGameActive) return;
+            hunger -= 1;
+            thirst -= 2;
+            if (hunger <= 0 || thirst <= 0) gameOver();
             updateUI();
         }, 1000);
 
         function updateUI() {
-            elMoney.innerText = money + " ₸";
-            elDebt.innerText = debt > 0 ? `Кредит: -${debt} ₸` : "";
-            elBankDebt.innerText = debt;
-
-            elHungerBar.style.width = hunger + "%";
-            elThirstBar.style.width = thirst + "%";
-            elHungerVal.innerText = hunger + "%";
-            elThirstVal.innerText = thirst + "%";
-
-            // Смена цвета полосок если мало
-            elHungerBar.style.background = hunger < 20 ? "#e74c3c" : "#f1c40f";
-            elThirstBar.style.background = thirst < 20 ? "#e74c3c" : "#3498db";
+            document.getElementById('moneyVal').innerText = money;
+            document.getElementById('hungerBar').style.width = hunger + '%';
+            document.getElementById('thirstBar').style.width = thirst + '%';
+            document.getElementById('debtBox').innerText = debt > 0 ? `Кредит: ${debt} ₸` : "";
         }
 
-        function showNotif(msg) {
-            notif.innerText = msg;
-            notif.style.opacity = 1;
-            setTimeout(() => { notif.style.opacity = 0; }, 2000);
+        function showMsg(text) {
+            const el = document.getElementById('msg');
+            el.innerText = text;
+            el.style.opacity = 1;
+            setTimeout(() => el.style.opacity = 0, 2000);
         }
 
-        // --- МЕХАНИКИ ---
+        // --- ФУНКЦИИ ЗДАНИЙ ---
 
-        function openMenu(id) {
-            document.querySelectorAll('.sub-screen').forEach(el => el.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
+        function openModal(id) {
+            activeModal = id;
+            document.getElementById(id).style.display = 'block';
         }
 
-        function workAction() {
-            if (isDead) return;
-            // Работа отнимает силы
-            hunger -= 5;
-            thirst -= 8;
+        function closeModal() {
+            if (activeModal) {
+                document.getElementById(activeModal).style.display = 'none';
+                activeModal = null;
+            }
+        }
+
+        // Работа
+        window.doWork = function() {
+            if(hunger < 10 || thirst < 10) { showMsg("Слишком слаб для работы!"); return; }
             money += 1000;
-            
-            showNotif("Заработал 1000 ₸ (устал)");
-            
-            // Проверка смерти от переутомления сразу после клика
-            if (hunger <= 0 || thirst <= 0) updateUI(); // Таймер добьет через секунду
-            else updateUI();
+            hunger -= 10;
+            thirst -= 10;
+            showMsg("+1000 ₸ (Усталость)");
+            updateUI();
         }
 
-        function buyItem(item) {
-            if (isDead) return;
-            let cost = 0;
-            let food = 0;
-            let water = 0;
-
-            if (item === 'bread') { cost = 200; food = 20; }
-            if (item === 'cola') { cost = 300; water = 30; }
-            if (item === 'doner') { cost = 1200; food = 50; water = 10; }
-
-            if (money >= cost) {
-                money -= cost;
+        // Магазин
+        window.buyItem = function(type, price, food, water) {
+            if (money >= price) {
+                money -= price;
                 hunger = Math.min(100, hunger + food);
                 thirst = Math.min(100, thirst + water);
-                showNotif("Куплено!");
+                showMsg("Куплено!");
                 updateUI();
             } else {
-                showNotif("Не хватает денег!");
+                showMsg("Нет денег!");
             }
         }
 
-        function takeLoan() {
-            if (debt + 5000 > CREDIT_LIMIT) {
-                showNotif("Банк отказал! Лимит превышен.");
-                return;
-            }
-            debt += 5000;
+        // Банк
+        window.takeLoan = function() {
+            if (debt >= 10000) { showMsg("Лимит исчерпан!"); return; }
             money += 5000;
-            showNotif("Кредит +5000 ₸");
+            debt += 5000;
+            showMsg("Кредит +5000 ₸");
             updateUI();
         }
-
-        function repayLoan() {
-            if (debt <= 0) {
-                showNotif("У тебя нет долгов!");
-                return;
-            }
-            if (money >= 5000) {
+        window.repayLoan = function() {
+            if (money >= 5000 && debt > 0) {
                 money -= 5000;
                 debt -= 5000;
-                showNotif("Долг погашен (-5000 ₸)");
+                showMsg("Долг погашен!");
                 updateUI();
-            } else {
-                showNotif("Не хватает денег для погашения!");
             }
         }
 
-        function gamble(color) {
-            let bet = parseInt(document.getElementById('betAmount').value);
-            if (!bet || bet <= 0) { showNotif("Неверная ставка!"); return; }
-            if (bet > money) { showNotif("Нет столько денег!"); return; }
-
-            money -= bet;
+        // Казино
+        window.spinCasino = function(isRed) {
+            let bet = parseInt(document.getElementById('betInput').value);
+            if (!bet || bet <= 0 || bet > money) { showMsg("Неверная ставка!"); return; }
             
-            // Эмуляция рулетки (рандом 0 или 1)
-            let win = Math.random() < 0.5; // 50% шанс
-
+            money -= bet;
+            let win = Math.random() < 0.5;
             if (win) {
                 money += bet * 2;
-                showNotif(`ПОБЕДА! +${bet*2} ₸`);
+                showMsg(`ВЫИГРЫШ! +${bet*2}`);
             } else {
-                showNotif("Проигрыш...");
+                showMsg("ПРОИГРЫШ...");
             }
             updateUI();
         }
 
-        function die(reason) {
-            isDead = true;
-            document.getElementById('deathReason').innerText = reason;
-            document.getElementById('gameOverScreen').style.display = 'flex';
+        // --- ПРОМОКОДЫ ---
+        window.enterPromo = function() {
+            let code = prompt("Введите промокод:");
+            if (!code) return;
+            
+            // Убираем пробелы и делаем проверку
+            if (code.trim() === "Мирас") {
+                money += 10000;
+                alert("✅ Промокод активирован!\nБаланс пополнен на 10,000 ₸");
+            } else if (code.trim() === "GreenGamesStudio") {
+                money += 100000;
+                alert("👑 LEGENDARY CODE!\nБаланс пополнен на 100,000 ₸");
+            } else {
+                alert("❌ Неверный промокод");
+            }
+            updateUI();
         }
 
-        // Старт
-        updateUI();
+        function gameOver() {
+            isGameActive = false;
+            alert("GAME OVER\nТы умер от голода или жажды.");
+            location.reload();
+        }
+
+        // Click to move (для мышки)
+        canvas.addEventListener('mousedown', (e) => {
+            player.x = e.clientX;
+            player.y = e.clientY;
+        });
+
     </script>
 </body>
 </html>
